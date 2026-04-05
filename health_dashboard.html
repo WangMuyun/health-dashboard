@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>健康数据分析报告 · Apple Watch</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+<style>
+:root {
+  --bg:#0f0f13; --surface:#1a1a22; --surface2:#22222e; --border:#2e2e3e;
+  --text:#e8e8f0; --muted:#8888aa;
+  --blue:#0a84ff; --green:#30d158; --red:#ff3b5c; --orange:#ff9f0a;
+  --purple:#bf5af2; --teal:#5ac8fa; --yellow:#ffd60a;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',sans-serif;min-height:100vh;overflow-x:hidden}
+
+/* ── Header ── */
+.header{background:linear-gradient(135deg,#1a1a2e,#16213e,#0f3460);padding:40px 40px 32px;position:relative;overflow:hidden}
+.header::before{content:'';position:absolute;top:-50%;right:-10%;width:600px;height:600px;background:radial-gradient(circle,rgba(10,132,255,.15),transparent 70%);pointer-events:none}
+.hc{position:relative;z-index:1;max-width:1400px;margin:0 auto}
+.htop{display:flex;align-items:center;gap:16px;margin-bottom:6px}
+.wicon{width:46px;height:46px;background:linear-gradient(135deg,#1c1c1e,#3a3a3c);border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:26px;box-shadow:0 4px 20px rgba(0,0,0,.5)}
+.header h1{font-size:30px;font-weight:700;letter-spacing:-.5px}
+.header h1 span{color:var(--blue)}
+.hsub{color:var(--muted);font-size:14px;margin-top:4px}
+.hmeta{display:flex;gap:16px;margin-top:18px;flex-wrap:wrap}
+.mi{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:11px;padding:9px 16px;font-size:12px;color:var(--muted)}
+.mi strong{color:var(--text);font-size:14px;display:block}
+
+/* ── Nav ── */
+.nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 40px;position:sticky;top:0;z-index:100}
+.nav-inner{max-width:1400px;margin:0 auto;display:flex;gap:2px;overflow-x:auto}
+.nav-btn{padding:13px 18px;background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;transition:all .2s;font-family:inherit}
+.nav-btn:hover{color:var(--text)}
+.nav-btn.active{color:var(--blue);border-bottom-color:var(--blue)}
+
+/* ── Time Range Bar ── */
+.time-bar{background:var(--surface2);border-bottom:1px solid var(--border);padding:10px 40px}
+.time-bar-inner{max-width:1400px;margin:0 auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.time-label{font-size:12px;color:var(--muted);margin-right:4px;white-space:nowrap}
+.tr-btn{padding:5px 14px;border-radius:20px;border:1px solid var(--border);background:none;color:var(--muted);font-size:12px;cursor:pointer;font-family:inherit;transition:all .18s;white-space:nowrap}
+.tr-btn:hover{border-color:var(--blue);color:var(--text)}
+.tr-btn.active{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:600}
+.tr-sep{width:1px;height:18px;background:var(--border);margin:0 4px}
+.tr-range-display{margin-left:auto;font-size:12px;color:var(--muted);white-space:nowrap}
+
+/* ── Main ── */
+.main{max-width:1400px;margin:0 auto;padding:28px 40px}
+.section{display:none}
+.section.active{display:block}
+
+/* ── Insight Banner ── */
+.insight{background:linear-gradient(135deg,rgba(10,132,255,.1),rgba(191,90,242,.06));border:1px solid rgba(10,132,255,.22);border-radius:14px;padding:18px 22px;margin-bottom:24px;display:flex;gap:14px;align-items:flex-start}
+.insight-icon{font-size:22px;flex-shrink:0;margin-top:1px}
+.insight h3{font-size:15px;font-weight:600;margin-bottom:5px}
+.insight p{font-size:13px;color:var(--muted);line-height:1.6}
+
+/* ── KPI Grid ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:14px;margin-bottom:24px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s}
+.kpi:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(0,0,0,.3)}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--kc,var(--blue))}
+.kpi-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px}
+.kpi-value{font-size:26px;font-weight:700;line-height:1;margin-bottom:3px}
+.kpi-unit{font-size:12px;color:var(--muted)}
+.kpi-trend{font-size:11px;margin-top:7px}
+.tg{color:var(--green)} .tw{color:var(--orange)} .tb{color:var(--red)} .tn{color:var(--muted)}
+
+/* ── Chart Cards ── */
+.chart-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-bottom:24px}
+.chart-grid.g1{grid-template-columns:1fr}
+.chart-grid.g3{grid-template-columns:repeat(3,1fr)}
+@media(max-width:1100px){.chart-grid,.chart-grid.g3{grid-template-columns:1fr}}
+.cc{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px}
+.cc.span2{grid-column:span 2}
+@media(max-width:1100px){.cc.span2{grid-column:span 1}}
+.cc-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px}
+.cc-title{font-size:15px;font-weight:600}
+.cc-sub{font-size:12px;color:var(--muted);margin-top:3px}
+.badge{font-size:11px;padding:3px 9px;border-radius:20px;font-weight:600;white-space:nowrap}
+.bg{background:rgba(48,209,88,.13);color:var(--green)}
+.bw{background:rgba(255,159,10,.13);color:var(--orange)}
+.bb{background:rgba(255,59,92,.13);color:var(--red)}
+.bi{background:rgba(10,132,255,.13);color:var(--blue)}
+.cv{position:relative;height:220px}
+.cv.tall{height:270px}
+.cv.short{height:160px}
+
+/* ── Alert Cards ── */
+.alerts{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px;margin-bottom:24px}
+.ac{border-radius:13px;padding:16px 18px;display:flex;gap:12px;align-items:flex-start}
+.ac.good{background:rgba(48,209,88,.07);border:1px solid rgba(48,209,88,.18)}
+.ac.warn{background:rgba(255,159,10,.07);border:1px solid rgba(255,159,10,.18)}
+.ac.bad{background:rgba(255,59,92,.07);border:1px solid rgba(255,59,92,.18)}
+.ac.info{background:rgba(10,132,255,.07);border:1px solid rgba(10,132,255,.18)}
+.ac-icon{font-size:20px;flex-shrink:0}
+.ac h4{font-size:13px;font-weight:600;margin-bottom:3px}
+.ac p{font-size:12px;color:var(--muted);line-height:1.5}
+
+/* ── Section Title ── */
+.stitle{font-size:20px;font-weight:700;margin-bottom:18px;display:flex;align-items:center;gap:9px}
+
+/* ── Legend ── */
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px}
+.li{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)}
+.ld{width:9px;height:9px;border-radius:50%}
+
+/* ── Timeline ── */
+.timeline{position:relative;padding-left:22px}
+.timeline::before{content:'';position:absolute;left:7px;top:0;bottom:0;width:2px;background:var(--border)}
+.tli{position:relative;margin-bottom:18px}
+.tli::before{content:'';position:absolute;left:-19px;top:5px;width:9px;height:9px;border-radius:50%;background:var(--blue);border:2px solid var(--bg)}
+.tli.good::before{background:var(--green)}
+.tli.warn::before{background:var(--orange)}
+.tli.bad::before{background:var(--red)}
+.tli-date{font-size:11px;color:var(--muted);margin-bottom:3px}
+.tli-text{font-size:13px;line-height:1.5}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+@media(max-width:768px){
+  .header,.main,.time-bar{padding-left:16px;padding-right:16px}
+  .nav{padding:0 16px}
+  .kpi-grid{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ HEADER ═══ -->
+<div class="header">
+  <div class="hc">
+    <div class="htop">
+      <div class="wicon">⌚</div>
+      <div>
+        <h1>健康数据分析 <span>Dashboard</span></h1>
+        <div class="hsub">Apple Watch · 个人健康趋势报告 · 2016–2026</div>
+      </div>
+    </div>
+    <div class="hmeta">
+      <div class="mi"><strong>女性 · 27岁</strong>1998-04-21</div>
+      <div class="mi"><strong>数据跨度</strong>2016 – 2026（约10年）</div>
+      <div class="mi"><strong>690 次</strong>运动记录</div>
+      <div class="mi"><strong>606 天</strong>睡眠记录</div>
+      <div class="mi"><strong>近30天均步数</strong>9,206 步/天</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ NAV ═══ -->
+<nav class="nav">
+  <div class="nav-inner">
+    <button class="nav-btn active" onclick="showSection('overview',event)">📊 总览</button>
+    <button class="nav-btn" onclick="showSection('heart',event)">❤️ 心脏健康</button>
+    <button class="nav-btn" onclick="showSection('activity',event)">🏃 运动活动</button>
+    <button class="nav-btn" onclick="showSection('sleep',event)">🌙 睡眠</button>
+    <button class="nav-btn" onclick="showSection('body',event)">⚖️ 体重体征</button>
+    <button class="nav-btn" onclick="showSection('insights',event)">💡 洞察建议</button>
+  </div>
+</nav>
+
+<!-- ═══ TIME RANGE BAR ═══ -->
+<div class="time-bar">
+  <div class="time-bar-inner">
+    <span class="time-label">时间范围：</span>
+    <button class="tr-btn" onclick="setRange('3m',this)">近3个月</button>
+    <button class="tr-btn" onclick="setRange('6m',this)">近6个月</button>
+    <button class="tr-btn active" onclick="setRange('1y',this)">近1年</button>
+    <button class="tr-btn" onclick="setRange('2y',this)">近2年</button>
+    <div class="tr-sep"></div>
+    <button class="tr-btn" onclick="setRange('all',this)">全部数据</button>
+    <button class="tr-btn" onclick="setRange('2024',this)">2024年</button>
+    <button class="tr-btn" onclick="setRange('2025',this)">2025年</button>
+    <button class="tr-btn" onclick="setRange('2023',this)">2023年</button>
+    <div class="tr-sep"></div>
+    <button class="tr-btn" onclick="setRange('covid',this)">疫情期间</button>
+    <button class="tr-btn" onclick="setRange('recovery',this)">恢复期</button>
+    <span class="tr-range-display" id="rangeDisplay">显示：2025-04 ~ 2026-04</span>
+  </div>
+</div>
+
+<!-- ═══ MAIN ═══ -->
+<div class="main">
+
+<!-- ── OVERVIEW ── -->
+<div id="section-overview" class="section active">
+  <div class="insight">
+    <div class="insight-icon">🔍</div>
+    <div>
+      <h3>整体健康趋势摘要</h3>
+      <p>2024年初经历明显健康低谷（静息心率88bpm、HRV跌至16ms），随后持续改善。2025年底至2026年初 VO2Max 升至40+，是近两年最佳状态。睡眠时长呈下降趋势，近期均值约6.5小时，需关注。切换上方时间范围可查看不同周期的数据。</p>
+    </div>
+  </div>
+  <div class="kpi-grid">
+    <div class="kpi" style="--kc:#ff3b5c"><div class="kpi-label">静息心率（近30天）</div><div class="kpi-value" style="color:#ff3b5c">64.5</div><div class="kpi-unit">bpm</div><div class="kpi-trend tg">↓ 较2024年高峰降23bpm</div></div>
+    <div class="kpi" style="--kc:#bf5af2"><div class="kpi-label">HRV（近30天）</div><div class="kpi-value" style="color:#bf5af2">35</div><div class="kpi-unit">ms</div><div class="kpi-trend tg">↑ 从低谷16ms恢复</div></div>
+    <div class="kpi" style="--kc:#30d158"><div class="kpi-label">日均步数（近30天）</div><div class="kpi-value" style="color:#ff9f0a">9,206</div><div class="kpi-unit">步/天</div><div class="kpi-trend tw">→ 接近10,000步目标</div></div>
+    <div class="kpi" style="--kc:#0a84ff"><div class="kpi-label">VO2Max</div><div class="kpi-value" style="color:#0a84ff">40.0</div><div class="kpi-unit">mL/kg/min</div><div class="kpi-trend tg">↑ 近两年最高</div></div>
+    <div class="kpi" style="--kc:#5ac8fa"><div class="kpi-label">平均睡眠（近30天）</div><div class="kpi-value" style="color:#5ac8fa">6.8</div><div class="kpi-unit">小时/天</div><div class="kpi-trend tw">↓ 低于推荐7-9小时</div></div>
+    <div class="kpi" style="--kc:#ff9f0a"><div class="kpi-label">血氧饱和度</div><div class="kpi-value" style="color:#ff9f0a">97</div><div class="kpi-unit">%</div><div class="kpi-trend tg">↑ 从95%提升</div></div>
+    <div class="kpi" style="--kc:#ff375f"><div class="kpi-label">呼吸频率</div><div class="kpi-value" style="color:#ff375f">14.1</div><div class="kpi-unit">次/分钟</div><div class="kpi-trend tg">↓ 从17降至14</div></div>
+    <div class="kpi" style="--kc:#ffd60a"><div class="kpi-label">步行稳定性</div><div class="kpi-value" style="color:#ffd60a">99</div><div class="kpi-unit">%</div><div class="kpi-trend tg">↑ 优秀水平</div></div>
+  </div>
+  <div class="chart-grid">
+    <div class="cc span2">
+      <div class="cc-head"><div><div class="cc-title">综合趋势：静息心率 · HRV · 步数</div><div class="cc-sub">三项核心指标月度变化</div></div><span class="badge bg">当前良好</span></div>
+      <div class="cv tall"><canvas id="overviewChart"></canvas></div>
+    </div>
+  </div>
+  <div class="chart-grid">
+    <div class="cc">
+      <div class="cc-head"><div><div class="cc-title">静息心率 vs HRV</div><div class="cc-sub">心脏自主神经健康双指标</div></div></div>
+      <div class="cv"><canvas id="ov_hrHrv"></canvas></div>
+    </div>
+    <div class="cc">
+      <div class="cc-head"><div><div class="cc-title">步数 & 运动时间</div><div class="cc-sub">日均步数与运动分钟数</div></div></div>
+      <div class="cv"><canvas id="ov_stepsEx"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── HEART ── -->
+<div id="section-heart" class="section">
+  <div class="stitle"><span>❤️</span> 心脏健康</div>
+  <div class="insight">
+    <div class="insight-icon">⚠️</div>
+    <div>
+      <h3>2024年2-4月：心脏压力事件</h3>
+      <p>静息心率从67bpm突升至88bpm，HRV从32ms骤降至16ms，历时约8个月恢复。2026年初心率降至64bpm，HRV回升至35ms，是近两年最佳。切换"全部数据"可看到2018年以来的长期基线。</p>
+    </div>
+  </div>
+  <div class="chart-grid g1">
+    <div class="cc">
+      <div class="cc-head"><div><div class="cc-title">静息心率趋势</div><div class="cc-sub">月度均值 · 理想 &lt;70 bpm</div></div><span class="badge bg" id="hr_badge">当前 64 bpm ✓</span></div>
+      <div class="cv tall"><canvas id="restingHR"></canvas></div>
+    </div>
+  </div>
+  <div class="chart-grid">
+    <div class="cc">
+      <div class="cc-head"><div><div class="cc-title">心率变异性 HRV</div><div class="cc-sub">SDNN · 越高代表自主神经越健康</div></div><span class="badge bw">偏低，需关注</span></div>
+      <div class="cv"><canvas id="hrv"></canvas></div>
+    </div>
+    <div class="cc">
+      <div class="cc-head"><div><div class="cc-title">全天平均心率</div><div class="cc-sub">包含运动时段的综合心率</div></div></div>
+      <div class="cv"><canvas id="avgHR"></canvas></div>
+    </div>
+  </div>
+  <div class="chart-grid">
+    <div class="cc">
+      <div class="cc-head"><div><div class="cc-title">血氧饱和度 SpO₂</div><div class="cc-sub">正常 ≥95%</div></div><span class="badge bg">97% 优秀</span></div>
+      <div class="cv"><canvas id="spo2"></canvas></div>
+    </div>
+    <div class="cc">
+      <div class="cc-head"><div><div class="cc-title">呼吸频率</div><div class="cc-sub">正常 12-20 次/分钟</div></div><span class="badge bg">14.1 正常</span></div>
+      <div class="cv"><canvas id="resp"></canvas></div>
+    </div>
+  </div>
+  <div class="chart-grid">
+    <div class="cc">
+      <div class="cc-head"><div><div class="cc-title">步行心率</div><div class="cc-sub">步行时平均心率（越低说明心肺越好）</div></div></div>
+      <div class="cv"><canvas id="walkHR"></canvas></div>
+    </div>
+    <div class="cc">
+      <div class="cc-head"><div><div class="cc-title">6分钟步行测试</div><div class="cc-sub">距离（米）· 满分500m</div></div></div>
+      <div class="cv"><canvas id="sixMin"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── ACTIVITY ── -->
+<div id="section-activity" class="section">
+  <div class="stitle"><span>🏃</span> 运动活动</div>
+  <div class="insight">
+    <div class="insight-icon">💪</div>
+    <div>
+      <h3>运动习惯持续改善，VO2Max创新高</h3>
+      <p>以功能性力量训练为主（301次），2025年起增加网球（71次）。VO2Max从2024年5月的27.8升至2026年3月的40.3，提升45%。切换"全部数据"可看到2016年以来的步数长期趋势，2020年疫情期间步数骤降至3,000步/天。</p>
+    </div>
+  </div>
+  <div class="chart-grid g1">
+    <div class="cc">
+      <div class="cc-head"><div><div class="cc-title">VO2Max 有氧能力</div><div class="cc-sub">27岁女性优秀标准 ≥37 mL/kg/min</div></div><span class="badge bg">40.3 优秀 🎉</span></div>
+      <div class="cv tall"><canvas id="vo2"></canvas></div>
+    </div>
+  </div>
+  <div class="chart-grid">
+    <div class="cc">
+      <div class="cc-head"><div><div class="cc-title">日均步数</div><div class="cc-sub">月度均值 · 目标 10,000 步</div></div><span class="badge bw" id="steps_badge">9,206 步</span></div>
+      <div class="cv"><canvas id="steps"></canvas></div>
+    </div>
+    <div class="cc">
+      <div class="cc-head"><div><div class="cc-title">日均步行距离</div><div class="cc-sub">月度均值（km/天）</div></div></div>
+      <div class="cv"><canvas id="distance"></canvas></div>
+    </div>
+  </div>
+  <div class="chart-grid">
+    <div class="cc">
+      <div class="cc-head"><div><div class="cc-title">日均运动时间</div><div class="cc-sub">WHO建议 ≥30分钟/天</div></div></div>
+      <div class="cv"><canvas id="exTime"></canvas></div>
+    </div>
+    <div class="cc">
+      <div class="cc-head"><div><div class="cc-title">活跃能量消耗</div><div class="cc-sub">日均主动消耗卡路里</div></div></div>
+      <div class="cv"><canvas id="energy"></canvas></div>
+    </div>
+  </div>
+  <div class="chart-grid">
+    <div class="cc">
+      <div class="cc-head"><div><div class="cc-title">步行速度</div><div class="cc-sub">月度均值（km/h）</div></div></div>
+      <div class="cv"><canvas id="walkSpeed"></canvas></div>
+    </div>
+    <div class="cc">
+      <div class="cc-head"><div><div class="cc-title">步行稳定性</div><div class="cc-sub">月度均值（%）· 越高越好</div></div></div>
+      <div class="cv"><canvas id="walkSteady"></canvas></div>
+    </div>
+  </div>
+  <div class="chart-grid">
+    <div class="cc">
+      <div class="cc-head"><div><div class="cc-title">每月运动次数（按类型）</div><div class="cc-sub">堆叠柱状图</div></div><span class="badge bi">690次总计</span></div>
+      <div class="cv"><canvas id="workoutCount"></canvas></div>
+    </div>
+    <div class="cc">
+      <div class="cc-head"><div><div class="cc-title">运动类型分布</div><div class="cc-sub">全部记录</div></div></div>
+      <div class="cv"><canvas id="workoutType"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SLEEP ── -->
+<div id="section-sleep" class="section">
+  <div class="stitle"><span>🌙</span> 睡眠分析</div>
+  <div class="insight">
+    <div class="insight-icon">😴</div>
+    <div>
+      <h3>睡眠时长持续下降，核心睡眠是主要缺口</h3>
+      <p>总睡眠从2024年初均值7.6h降至2026年初6.4h，下降约1.2小时。缩水几乎全部来自核心睡眠（4.87h→4.10h），深睡和REM绝对量相对稳定，说明身体在优先保护高质量睡眠阶段。2025年1-3月夜间清醒时间异常升高（最高0.52h），与同期心率偏高、HRV偏低吻合。</p>
+    </div>
+  </div>
+
+  <!-- KPI 行 -->
+  <div class="kpi-grid" style="margin-bottom:20px">
+    <div class="kpi" style="--kc:#5ac8fa"><div class="kpi-label">2024上半年均值</div><div class="kpi-value" style="color:#5ac8fa">7.63</div><div class="kpi-unit">小时/天</div><div class="kpi-trend tn">基准期</div></div>
+    <div class="kpi" style="--kc:#ff9f0a"><div class="kpi-label">2024下半年-2025初</div><div class="kpi-value" style="color:#ff9f0a">7.24</div><div class="kpi-unit">小时/天</div><div class="kpi-trend tw">↓ -0.39h</div></div>
+    <div class="kpi" style="--kc:#ff3b5c"><div class="kpi-label">2025中期至今</div><div class="kpi-value" style="color:#ff3b5c">6.92</div><div class="kpi-unit">小时/天</div><div class="kpi-trend tb">↓ -0.71h</div></div>
+    <div class="kpi" style="--kc:#30d158"><div class="kpi-label">深睡（稳定）</div><div class="kpi-value" style="color:#30d158">~1.0</div><div class="kpi-unit">小时/天</div><div class="kpi-trend tg">→ 相对稳定</div></div>
+    <div class="kpi" style="--kc:#4a90d9"><div class="kpi-label">REM（稳定）</div><div class="kpi-value" style="color:#4a90d9">~1.75</div><div class="kpi-unit">小时/天</div><div class="kpi-trend tg">→ 相对稳定</div></div>
+    <div class="kpi" style="--kc:#bf5af2"><div class="kpi-label">核心睡眠（下降）</div><div class="kpi-value" style="color:#bf5af2">4.10</div><div class="kpi-unit">小时/天</div><div class="kpi-trend tb">↓ 从4.87h降幅最大</div></div>
+  </div>
+
+  <!-- 趋势一：总睡眠时长 -->
+  <div class="chart-grid g1">
+    <div class="cc">
+      <div class="cc-head"><div><div class="cc-title">① 总睡眠时长趋势</div><div class="cc-sub">月度均值 · 推荐 7-9 小时 · 持续下降趋势清晰可见</div></div><span class="badge bw">近期 6.5h ⚠️</span></div>
+      <div class="cv tall"><canvas id="sleepTrend"></canvas></div>
+    </div>
+  </div>
+
+  <!-- 趋势二：各阶段绝对量 -->
+  <div class="chart-grid">
+    <div class="cc span2">
+      <div class="cc-head"><div><div class="cc-title">② 睡眠结构分解：核心睡眠是缺口所在</div><div class="cc-sub">深睡/REM/核心睡眠 月度均值堆叠 · 核心睡眠（浅蓝）明显收缩，深睡（深蓝）和REM（中蓝）相对稳定</div></div></div>
+      <div class="cv tall"><canvas id="sleepStages"></canvas></div>
+      <div class="legend" style="margin-top:10px">
+        <div class="li"><div class="ld" style="background:#1e5fa0"></div>深睡（稳定 ~1h）</div>
+        <div class="li"><div class="ld" style="background:#4a90d9"></div>REM（稳定 ~1.75h）</div>
+        <div class="li"><div class="ld" style="background:#7bb8f0"></div>核心睡眠（持续下降 4.87→4.10h）</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 趋势三：深睡REM绝对量 + REM占比 -->
+  <div class="chart-grid">
+    <div class="cc">
+      <div class="cc-head"><div><div class="cc-title">③ 深睡 & REM 绝对量</div><div class="cc-sub">虽然总时长下降，但这两项基本守住了</div></div></div>
+      <div class="cv"><canvas id="sleepQuality"></canvas></div>
+    </div>
+    <div class="cc">
+      <div class="cc-head"><div><div class="cc-title">③ REM 占比（被动上升）</div><div class="cc-sub">占比升高≠质量变好，是总时长缩短导致的被动提升</div></div><span class="badge bw">26-28% 偏高</span></div>
+      <div class="cv"><canvas id="remRatio"></canvas></div>
+    </div>
+  </div>
+
+  <!-- 趋势四：夜间清醒 + 每日分布 -->
+  <div class="chart-grid">
+    <div class="cc">
+      <div class="cc-head"><div><div class="cc-title">④ 夜间清醒时间</div><div class="cc-sub">2025年1-3月异常升高（最高0.52h），与心率危机期吻合</div></div><span class="badge bw">2025年初异常</span></div>
+      <div class="cv"><canvas id="sleepAwake"></canvas></div>
+    </div>
+    <div class="cc">
+      <div class="cc-head"><div><div class="cc-title">④ 每日睡眠时长分布</div><div class="cc-sub">606天记录 · 仅40%的天数睡够7-8小时</div></div></div>
+      <div class="cv"><canvas id="sleepDist"></canvas></div>
+    </div>
+  </div>
+
+  <!-- 腕部体温 -->
+  <div class="chart-grid">
+    <div class="cc">
+      <div class="cc-head"><div><div class="cc-title">腕部体温</div><div class="cc-sub">睡眠时腕部温度月度均值（°C）· 稳定无异常</div></div><span class="badge bg">36.0-36.4°C 正常</span></div>
+      <div class="cv"><canvas id="wristTemp"></canvas></div>
+    </div>
+    <div class="cc">
+      <div class="cc-head"><div><div class="cc-title">核心睡眠趋势</div><div class="cc-sub">月度均值（小时）· 下降最明显的阶段</div></div><span class="badge bb">4.87h → 4.10h</span></div>
+      <div class="cv"><canvas id="sleepCore"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── BODY ── -->
+<div id="section-body" class="section">
+  <div class="stitle"><span>⚖️</span> 体重与体征</div>
+  <div class="insight">
+    <div class="insight-icon">📈</div>
+    <div>
+      <h3>体重波动明显，2025年10月出现阶段性高峰</h3>
+      <p>体重在55-59.4kg之间波动，2025年10月达到近年最高59.4kg，2026年初回落至57.5kg。BMI始终在正常范围内。切换"全部数据"可看到2016年以来的完整体重历史。</p>
+    </div>
+  </div>
+  <div class="chart-grid g1">
+    <div class="cc">
+      <div class="cc-head"><div><div class="cc-title">体重变化趋势</div><div class="cc-sub">月度均值（kg）</div></div><span class="badge bi">57.5 kg</span></div>
+      <div class="cv tall"><canvas id="weight"></canvas></div>
+    </div>
+  </div>
+  <div class="chart-grid">
+    <div class="cc">
+      <div class="cc-head"><div><div class="cc-title">BMI 趋势</div><div class="cc-sub">正常范围 18.5-24.9</div></div><span class="badge bg">正常范围</span></div>
+      <div class="cv"><canvas id="bmi"></canvas></div>
+    </div>
+    <div class="cc">
+      <div class="cc-head"><div><div class="cc-title">爬楼层数</div><div class="cc-sub">日均爬楼层数（月度）</div></div></div>
+      <div class="cv"><canvas id="flights"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── INSIGHTS ── -->
+<div id="section-insights" class="section">
+  <div class="stitle"><span>💡</span> 健康洞察与建议</div>
+  <div class="alerts">
+    <div class="ac good"><div class="ac-icon">🏆</div><div><h4>VO2Max 达到优秀水平</h4><p>当前40.3 mL/kg/min，超过27岁女性"优秀"标准（≥37），较2024年5月的27.8提升45%，是近两年最显著改善。</p></div></div>
+    <div class="ac warn"><div class="ac-icon">👟</div><div><h4>步数接近但未稳定达标</h4><p>近30天日均9,206步，接近10,000步目标但尚未稳定达到。步行稳定性99%，步态健康，建议增加日常步行。</p></div></div>
+    <div class="ac good"><div class="ac-icon">💓</div><div><h4>心率从高峰恢复</h4><p>静息心率从2024年3月的88bpm降至当前64bpm，降幅27%。HRV从16ms恢复至35ms，自主神经功能明显改善。</p></div></div>
+    <div class="ac good"><div class="ac-icon">🫁</div><div><h4>呼吸与血氧改善</h4><p>呼吸频率从17次/分降至14次/分，血氧从95%升至97%，心肺功能提升明显。</p></div></div>
+    <div class="ac warn"><div class="ac-icon">😴</div><div><h4>睡眠时长不足 ⚠️</h4><p>近期均值6.4-6.8小时，低于推荐7-9小时。长期睡眠不足影响心脏健康、认知和体重管理，建议每晚争取7小时以上。</p></div></div>
+    <div class="ac warn"><div class="ac-icon">📉</div><div><h4>HRV 仍偏低 ⚠️</h4><p>当前约35ms，27岁女性同龄均值约50-60ms。HRV偏低提示恢复能力有限，建议减压、保证睡眠、避免过度训练。</p></div></div>
+    <div class="ac warn"><div class="ac-icon">⚖️</div><div><h4>体重波动较大 ⚠️</h4><p>近两年在55-59.4kg波动，2025年10月达近年最高。BMI仍在正常范围，建议保持稳定的饮食和运动节奏。</p></div></div>
+    <div class="ac bad"><div class="ac-icon">🚨</div><div><h4>2024年初健康危机回顾</h4><p>2024年2-4月静息心率88bpm、HRV仅16ms，通常与严重压力、疾病或过度疲劳有关，历时8个月恢复。建议关注类似诱因。</p></div></div>
+    <div class="ac info"><div class="ac-icon">🎾</div><div><h4>运动多样性提升</h4><p>2025年起增加网球（71次）、骑行（20次），与力量训练形成良好互补，建议继续保持有氧+力量组合。</p></div></div>
+    <div class="ac info"><div class="ac-icon">🌡️</div><div><h4>腕部体温正常</h4><p>睡眠时腕部体温稳定在36.0-36.4°C，无异常波动，未见发热或体温异常事件。</p></div></div>
+  </div>
+
+  <div class="stitle" style="margin-top:8px"><span>📅</span> 健康事件时间线</div>
+  <div class="cc" style="margin-bottom:24px">
+    <div class="timeline">
+      <div class="tli bad"><div class="tli-date">2024年2月</div><div class="tli-text">静息心率突升至85bpm，HRV骤降至22ms，身体进入高应激状态</div></div>
+      <div class="tli bad"><div class="tli-date">2024年3月</div><div class="tli-text">心率达峰值88bpm，HRV降至最低16ms，同期开始增加运动</div></div>
+      <div class="tli warn"><div class="tli-date">2024年5月</div><div class="tli-text">开始记录VO2Max，初始值27.8（偏低），心率缓慢下降至79bpm</div></div>
+      <div class="tli warn"><div class="tli-date">2024年6-8月</div><div class="tli-text">步数提升至8,000-9,000步/天，心率持续改善，体重升至58kg</div></div>
+      <div class="tli good"><div class="tli-date">2024年9-10月</div><div class="tli-text">心率恢复至68-69bpm，HRV回升至35ms，步数达到9,000-10,000步/天</div></div>
+      <div class="tli good"><div class="tli-date">2025年1-3月</div><div class="tli-text">体重降至56kg，增加网球运动，VO2Max稳定在32左右</div></div>
+      <div class="tli warn"><div class="tli-date">2025年5-6月</div><div class="tli-text">心率小幅回升至72-79bpm，HRV下降至26ms，可能存在新的压力事件</div></div>
+      <div class="tli warn"><div class="tli-date">2025年10月</div><div class="tli-text">体重达近年最高59.4kg，步数同期达10,295步/天（月均最高）</div></div>
+      <div class="tli good"><div class="tli-date">2025年12月 - 2026年3月</div><div class="tli-text">VO2Max快速提升：37→40.3，心率降至64bpm，HRV回升至35ms，整体最佳状态</div></div>
+      <div class="tli good"><div class="tli-date">2026年4月（当前）</div><div class="tli-text">VO2Max 40.0，静息心率64bpm，HRV 35ms，整体健康状况良好</div></div>
+    </div>
+  </div>
+
+  <div class="stitle"><span>🎯</span> 行动建议</div>
+  <div class="alerts">
+    <div class="ac info"><div class="ac-icon">1️⃣</div><div><h4>优先改善睡眠</h4><p>设定固定就寝时间（如23:00），目标每晚7-7.5小时。睡眠改善将直接提升HRV和心脏恢复能力。</p></div></div>
+    <div class="ac info"><div class="ac-icon">2️⃣</div><div><h4>维持当前运动习惯</h4><p>力量训练+网球+步行的组合很好，建议每周3-4次力量训练，2次有氧运动（网球/骑行）。</p></div></div>
+    <div class="ac info"><div class="ac-icon">3️⃣</div><div><h4>关注压力管理</h4><p>HRV偏低提示压力较大，建议增加冥想、深呼吸等放松练习。历史数据显示压力事件会导致心率骤升。</p></div></div>
+    <div class="ac info"><div class="ac-icon">4️⃣</div><div><h4>稳定体重管理</h4><p>体重波动较大，建议保持规律饮食节奏，避免大幅增减。当前57.5kg处于健康范围，维持即可。</p></div></div>
+  </div>
+</div>
+
+</div><!-- /main -->
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// FULL DATA (all months, deduplicated)
+// ═══════════════════════════════════════════════════════════
+const RAW = {"resting_heart_rate":{"2018-10":61.06,"2018-11":61.13,"2018-12":62.47,"2019-01":62.58,"2019-02":61.91,"2019-03":60.37,"2019-04":63.7,"2019-05":63.25,"2019-06":62.96,"2019-07":61.16,"2019-08":63.81,"2019-09":61.41,"2019-10":62.48,"2019-11":64.71,"2019-12":63.0,"2020-01":65.0,"2020-02":61.22,"2020-03":65.95,"2020-04":70.0,"2020-05":65.1,"2020-06":66.83,"2020-07":68.17,"2020-08":65.74,"2020-09":63.64,"2020-10":69.11,"2020-11":68.68,"2020-12":64.56,"2021-03":69.45,"2021-04":66.38,"2021-05":66.18,"2021-06":63.74,"2021-07":67.72,"2021-08":70.6,"2021-09":69.29,"2021-11":67.67,"2021-12":67.75,"2022-03":69.12,"2022-04":69.62,"2022-05":66.43,"2022-06":68.42,"2022-07":69.26,"2022-08":67.56,"2022-09":65.37,"2022-10":69.0,"2022-11":65.35,"2022-12":66.8,"2023-12":69.14,"2024-01":67.07,"2024-02":85.27,"2024-03":87.89,"2024-04":86.82,"2024-05":79.18,"2024-06":76.9,"2024-07":73.74,"2024-08":71.9,"2024-09":68.9,"2024-10":68.6,"2024-11":67.25,"2024-12":68.97,"2025-01":67.6,"2025-02":69.19,"2025-03":69.78,"2025-04":67.29,"2025-05":72.03,"2025-06":79.29,"2025-07":75.76,"2025-08":73.64,"2025-09":72.07,"2025-10":65.27,"2025-11":72.38,"2025-12":67.9,"2026-01":68.03,"2026-02":64.18,"2026-03":64.81,"2026-04":64.2},"hrv":{"2020-06":34.09,"2020-07":30.46,"2020-08":35.89,"2020-09":37.92,"2020-10":34.76,"2020-11":32.9,"2020-12":37.47,"2021-03":25.4,"2021-04":37.71,"2021-05":37.24,"2021-06":39.12,"2021-07":36.36,"2021-08":31.91,"2021-09":38.62,"2021-11":35.23,"2021-12":40.81,"2022-03":36.81,"2022-04":35.48,"2022-05":38.05,"2022-06":36.62,"2022-07":38.06,"2022-08":39.02,"2022-09":37.08,"2022-10":36.6,"2022-11":40.02,"2022-12":34.11,"2023-12":33.89,"2024-01":32.38,"2024-02":21.87,"2024-03":16.09,"2024-04":18.79,"2024-05":25.42,"2024-06":25.19,"2024-07":27.27,"2024-08":31.52,"2024-09":34.97,"2024-10":35.54,"2024-11":34.18,"2024-12":31.78,"2025-01":31.29,"2025-02":34.42,"2025-03":35.67,"2025-04":33.13,"2025-05":27.9,"2025-06":25.72,"2025-07":25.57,"2025-08":29.86,"2025-09":27.93,"2025-10":34.42,"2025-11":29.42,"2025-12":29.15,"2026-01":32.77,"2026-02":34.72,"2026-03":34.01,"2026-04":35.12},"heart_rate":{"2018-10":80.42,"2018-11":76.37,"2018-12":77.41,"2019-01":76.26,"2019-02":73.7,"2019-03":76.06,"2019-04":76.99,"2019-05":77.4,"2019-06":77.34,"2019-07":76.77,"2019-08":78.05,"2019-09":76.79,"2019-10":78.95,"2019-11":79.95,"2019-12":76.74,"2020-01":76.96,"2020-02":77.34,"2020-03":80.53,"2020-04":82.78,"2020-05":83.84,"2020-06":80.5,"2020-07":89.34,"2020-08":84.44,"2020-09":76.89,"2020-10":89.84,"2020-11":88.23,"2020-12":83.93,"2021-03":86.04,"2021-04":87.01,"2021-05":86.82,"2021-06":83.45,"2021-07":86.91,"2021-08":88.71,"2021-09":84.67,"2021-11":90.02,"2021-12":78.91,"2022-03":91.31,"2022-04":87.57,"2022-05":87.7,"2022-06":84.69,"2022-07":87.18,"2022-08":86.5,"2022-09":84.49,"2022-10":86.17,"2022-11":86.45,"2022-12":83.74,"2023-11":79.0,"2023-12":77.86,"2024-01":92.95,"2024-02":103.57,"2024-03":107.26,"2024-04":103.04,"2024-05":99.16,"2024-06":95.12,"2024-07":89.06,"2024-08":87.96,"2024-09":83.39,"2024-10":83.8,"2024-11":80.48,"2024-12":84.39,"2025-01":82.93,"2025-02":84.14,"2025-03":84.44,"2025-04":84.06,"2025-05":89.75,"2025-06":98.43,"2025-07":90.76,"2025-08":90.53,"2025-09":86.7,"2025-10":80.84,"2025-11":87.19,"2025-12":87.9,"2026-01":93.25,"2026-02":93.76,"2026-03":86.97,"2026-04":89.75},"spo2":{"2024-05":0.95,"2024-06":0.95,"2024-07":0.96,"2024-08":0.95,"2024-09":0.96,"2024-10":0.96,"2024-11":0.96,"2024-12":0.96,"2025-01":0.95,"2025-02":0.96,"2025-03":0.96,"2025-04":0.96,"2025-05":0.96,"2025-06":0.96,"2025-07":0.96,"2025-08":0.96,"2025-09":0.96,"2025-10":0.96,"2025-11":0.97,"2025-12":0.97,"2026-01":0.97,"2026-02":0.97,"2026-03":0.97,"2026-04":0.97},"respiratory_rate":{"2021-12":14.04,"2023-12":15.27,"2024-01":15.65,"2024-02":18.19,"2024-03":16.17,"2024-04":16.53,"2024-05":17.25,"2024-06":16.38,"2024-07":16.25,"2024-08":15.97,"2024-09":15.15,"2024-10":15.06,"2024-11":15.17,"2024-12":14.98,"2025-01":14.13,"2025-02":13.96,"2025-03":14.21,"2025-04":14.9,"2025-05":16.01,"2025-06":17.15,"2025-07":16.42,"2025-08":16.87,"2025-09":14.96,"2025-10":15.24,"2025-11":15.39,"2025-12":15.29,"2026-01":15.23,"2026-02":15.2,"2026-03":14.4,"2026-04":14.1},"walking_hr":{"2018-10":107.11,"2018-11":109.19,"2018-12":114.65,"2019-01":108.85,"2019-02":101.83,"2019-03":102.58,"2019-04":106.44,"2019-05":105.17,"2019-06":107.65,"2019-07":103.73,"2019-08":108.41,"2019-09":103.91,"2019-10":109.71,"2019-11":109.96,"2019-12":111.08,"2020-01":108.04,"2020-02":104.47,"2020-03":108.0,"2020-04":106.36,"2020-05":106.88,"2020-06":105.89,"2020-07":123.88,"2020-08":117.84,"2020-09":104.87,"2020-10":108.69,"2020-11":104.1,"2020-12":102.89,"2021-03":109.4,"2021-04":106.54,"2021-05":103.69,"2021-06":102.5,"2021-07":105.46,"2021-08":111.61,"2021-09":102.95,"2021-11":108.0,"2021-12":102.88,"2022-03":108.94,"2022-04":106.75,"2022-05":102.78,"2022-06":104.22,"2022-07":108.13,"2022-08":103.54,"2022-09":102.22,"2022-10":101.89,"2022-11":104.5,"2022-12":103.7,"2023-12":100.43,"2024-01":110.1,"2024-02":123.0,"2024-03":126.55,"2024-04":115.31,"2024-05":116.86,"2024-06":111.87,"2024-07":107.79,"2024-08":107.43,"2024-09":99.06,"2024-10":99.9,"2024-11":100.12,"2024-12":105.52,"2025-01":101.12,"2025-02":102.33,"2025-03":99.98,"2025-04":100.0,"2025-05":101.76,"2025-06":113.74,"2025-07":108.34,"2025-08":106.84,"2025-09":99.04,"2025-10":94.12,"2025-11":103.3,"2025-12":101.67,"2026-01":101.87,"2026-02":95.29,"2026-03":96.71,"2026-04":96.3},"six_min_walk":{"2020-12":500.0,"2021-04":500.0,"2021-07":500.0,"2021-08":463.0,"2021-12":500.0,"2022-03":500.0,"2022-04":500.0,"2022-05":500.0,"2022-06":495.67,"2022-07":488.25,"2022-08":461.5,"2022-09":460.33,"2022-10":456.25,"2022-11":481.5,"2024-01":450.5,"2024-02":500.0,"2024-03":498.0,"2024-04":497.33,"2024-05":475.5,"2024-06":499.25,"2024-07":500.0,"2024-08":486.0,"2024-09":482.0,"2024-10":500.0,"2024-11":500.0,"2024-12":500.0,"2025-01":500.0,"2025-02":499.0,"2025-03":485.0,"2025-04":490.5,"2025-05":490.75,"2025-06":498.6,"2025-07":461.5,"2025-08":474.5,"2025-09":450.25,"2025-10":490.25,"2025-11":498.25,"2025-12":500.0,"2026-01":500.0,"2026-02":499.25,"2026-03":498.0,"2026-04":490.0},"vo2max":{"2020-10":35.44,"2020-11":36.22,"2020-12":36.15,"2024-05":27.75,"2024-06":28.4,"2024-07":28.28,"2024-08":28.38,"2024-09":31.38,"2024-10":32.93,"2024-11":33.74,"2024-12":33.44,"2025-01":32.5,"2025-02":32.3,"2025-03":31.92,"2025-04":32.13,"2025-05":31.9,"2025-10":31.41,"2025-12":37.08,"2026-01":35.75,"2026-02":37.33,"2026-03":40.32,"2026-04":40.03},"steps":{"2016-10":8702.67,"2016-11":8062.23,"2016-12":8224.65,"2017-01":8119.58,"2017-02":7419.75,"2017-03":7118.06,"2017-04":7918.07,"2017-05":6853.61,"2017-06":6587.03,"2017-07":5894.99,"2017-08":6939.13,"2017-09":7889.5,"2017-10":7287.74,"2017-11":7921.37,"2017-12":6725.9,"2018-01":5873.77,"2018-02":4317.64,"2018-03":8852.26,"2018-04":9020.33,"2018-05":7828.29,"2018-06":6202.97,"2018-07":7809.52,"2018-08":5631.52,"2018-09":5275.35,"2018-10":17037.36,"2018-11":10061.88,"2018-12":10026.02,"2019-01":8906.0,"2019-02":10457.3,"2019-03":12160.07,"2019-04":10273.27,"2019-05":9162.8,"2019-06":8762.44,"2019-07":7763.68,"2019-08":9705.32,"2019-09":8418.53,"2019-10":11536.56,"2019-11":10151.55,"2019-12":9203.74,"2020-01":4857.04,"2020-02":2515.08,"2020-03":3417.66,"2020-04":3091.5,"2020-05":3923.55,"2020-06":6137.74,"2020-07":5278.01,"2020-08":8023.71,"2020-09":10675.81,"2020-10":13303.7,"2020-11":13393.17,"2020-12":10732.39,"2021-01":3773.26,"2021-02":3326.32,"2021-03":7403.57,"2021-04":11303.63,"2021-05":9411.93,"2021-06":10746.38,"2021-07":8253.37,"2021-08":6360.43,"2021-09":7703.31,"2021-10":6172.16,"2021-11":6550.27,"2021-12":5888.47,"2022-01":5798.87,"2022-02":4599.54,"2022-03":8238.97,"2022-04":7048.99,"2022-05":8760.05,"2022-06":6493.5,"2022-07":6502.69,"2022-08":6262.13,"2022-09":4942.02,"2022-10":7654.46,"2022-11":6206.49,"2022-12":3620.86,"2023-01":4260.82,"2023-02":4288.89,"2023-03":4396.13,"2023-04":5307.93,"2023-05":6530.26,"2023-06":9153.13,"2023-07":6783.29,"2023-08":5503.71,"2023-09":6564.67,"2023-10":7397.65,"2023-11":7052.03,"2023-12":5434.75,"2024-01":7078.22,"2024-02":6747.47,"2024-03":8433.91,"2024-04":7329.29,"2024-05":6334.81,"2024-06":8589.38,"2024-07":7698.5,"2024-08":8190.69,"2024-09":9386.71,"2024-10":9888.65,"2024-11":7273.42,"2024-12":7625.29,"2025-01":7446.18,"2025-02":7304.5,"2025-03":6667.02,"2025-04":8982.1,"2025-05":9654.83,"2025-06":8266.69,"2025-07":7713.55,"2025-08":7855.75,"2025-09":8401.95,"2025-10":10294.88,"2025-11":8663.0,"2025-12":8323.01,"2026-01":8902.06,"2026-02":9483.51,"2026-03":9417.58,"2026-04":8800.22},"distance":{"2016-10":6.02,"2016-11":5.38,"2016-12":5.82,"2017-01":5.67,"2017-02":5.12,"2017-03":4.94,"2017-04":5.36,"2017-05":4.74,"2017-06":4.55,"2017-07":4.0,"2017-08":4.64,"2017-09":5.4,"2017-10":5.03,"2017-11":5.52,"2017-12":4.72,"2018-01":4.11,"2018-02":3.1,"2018-03":6.36,"2018-04":6.48,"2018-05":5.66,"2018-06":4.49,"2018-07":5.64,"2018-08":4.06,"2018-09":3.74,"2018-10":11.05,"2018-11":7.93,"2018-12":7.82,"2019-01":6.83,"2019-02":7.52,"2019-03":9.53,"2019-04":7.92,"2019-05":7.22,"2019-06":6.94,"2019-07":6.13,"2019-08":7.7,"2019-09":6.5,"2019-10":8.89,"2019-11":7.82,"2019-12":7.05,"2020-01":3.64,"2020-02":1.9,"2020-03":2.46,"2020-04":2.18,"2020-05":2.88,"2020-06":4.37,"2020-07":3.82,"2020-08":5.89,"2020-09":8.04,"2020-10":10.39,"2020-11":10.33,"2020-12":8.29,"2021-01":2.63,"2021-02":2.31,"2021-03":5.31,"2021-04":8.43,"2021-05":7.08,"2021-06":8.27,"2021-07":6.26,"2021-08":4.61,"2021-09":5.51,"2021-10":4.18,"2021-11":4.57,"2021-12":3.99,"2022-01":3.91,"2022-02":3.14,"2022-03":6.01,"2022-04":5.24,"2022-05":6.53,"2022-06":4.78,"2022-07":4.76,"2022-08":4.6,"2022-09":3.58,"2022-10":5.52,"2022-11":4.63,"2022-12":2.66,"2023-01":3.01,"2023-02":3.0,"2023-03":3.08,"2023-04":3.7,"2023-05":4.61,"2023-06":6.42,"2023-07":4.73,"2023-08":3.85,"2023-09":4.46,"2023-10":5.21,"2023-11":4.97,"2023-12":3.92,"2024-01":5.15,"2024-02":4.94,"2024-03":6.22,"2024-04":5.31,"2024-05":4.57,"2024-06":6.7,"2024-07":6.03,"2024-08":6.32,"2024-09":7.23,"2024-10":7.49,"2024-11":5.44,"2024-12":5.77,"2025-01":5.49,"2025-02":5.46,"2025-03":4.9,"2025-04":6.63,"2025-05":7.31,"2025-06":6.26,"2025-07":5.86,"2025-08":5.81,"2025-09":6.24,"2025-10":7.69,"2025-11":6.48,"2025-12":6.45,"2026-01":6.91,"2026-02":7.16,"2026-03":7.07,"2026-04":6.71},"active_energy":{"2018-10":587.45,"2018-11":410.45,"2018-12":333.49,"2019-01":333.47,"2019-02":374.86,"2019-03":391.51,"2019-04":346.12,"2019-05":355.56,"2019-06":340.0,"2019-07":281.47,"2019-08":374.48,"2019-09":335.46,"2019-10":313.54,"2019-11":379.81,"2019-12":373.41,"2020-01":188.36,"2020-02":262.06,"2020-03":207.64,"2020-04":159.04,"2020-05":187.35,"2020-06":157.8,"2020-07":231.15,"2020-08":324.8,"2020-09":330.34,"2020-10":412.11,"2020-11":405.15,"2020-12":336.97,"2021-03":259.26,"2021-04":375.97,"2021-05":300.03,"2021-06":392.87,"2021-07":283.53,"2021-08":196.25,"2021-09":189.16,"2021-11":263.03,"2021-12":208.07,"2022-03":308.19,"2022-04":301.63,"2022-05":310.17,"2022-06":254.65,"2022-07":280.05,"2022-08":245.48,"2022-09":194.82,"2022-10":253.66,"2022-11":255.42,"2022-12":124.53,"2023-10":149.23,"2023-11":157.99,"2023-12":91.72,"2024-01":410.83,"2024-02":469.41,"2024-03":431.27,"2024-04":331.09,"2024-05":467.43,"2024-06":433.99,"2024-07":446.0,"2024-08":433.62,"2024-09":455.55,"2024-10":480.38,"2024-11":372.4,"2024-12":399.48,"2025-01":354.59,"2025-02":415.6,"2025-03":395.59,"2025-04":415.46,"2025-05":558.96,"2025-06":488.27,"2025-07":494.63,"2025-08":438.81,"2025-09":443.42,"2025-10":474.62,"2025-11":491.44,"2025-12":439.67,"2026-01":477.18,"2026-02":566.15,"2026-03":432.35,"2026-04":495.41},"exercise_time":{"2018-10":41.78,"2018-11":26.07,"2018-12":15.83,"2019-01":16.25,"2019-02":12.67,"2019-03":18.33,"2019-04":17.85,"2019-05":12.31,"2019-06":11.64,"2019-07":9.31,"2019-08":10.63,"2019-09":12.19,"2019-10":14.15,"2019-11":23.57,"2019-12":23.93,"2020-01":11.07,"2020-02":27.1,"2020-03":21.0,"2020-04":7.33,"2020-05":22.33,"2020-06":4.6,"2020-07":14.0,"2020-08":37.06,"2020-09":17.38,"2020-10":27.57,"2020-11":30.03,"2020-12":23.56,"2021-03":15.67,"2021-04":19.23,"2021-05":17.21,"2021-06":19.7,"2021-07":11.7,"2021-08":12.43,"2021-09":12.56,"2021-11":21.0,"2021-12":10.67,"2022-03":27.45,"2022-04":19.17,"2022-05":34.42,"2022-06":14.88,"2022-07":21.78,"2022-08":15.0,"2022-09":11.62,"2022-10":16.61,"2022-11":45.65,"2022-12":9.4,"2023-12":6.29,"2024-01":70.62,"2024-02":91.33,"2024-03":80.35,"2024-04":65.32,"2024-05":83.91,"2024-06":53.7,"2024-07":65.87,"2024-08":53.01,"2024-09":56.87,"2024-10":71.75,"2024-11":45.2,"2024-12":41.34,"2025-01":32.01,"2025-02":46.62,"2025-03":38.96,"2025-04":43.61,"2025-05":67.08,"2025-06":56.88,"2025-07":54.93,"2025-08":52.46,"2025-09":44.32,"2025-10":40.14,"2025-11":55.88,"2025-12":40.42,"2026-01":62.23,"2026-02":70.12,"2026-03":44.97,"2026-04":44.51},"walking_speed":{"2020-11":3.98,"2020-12":4.24,"2021-01":4.08,"2021-02":3.96,"2021-03":4.06,"2021-04":4.1,"2021-05":4.16,"2021-06":4.23,"2021-07":4.19,"2021-08":4.25,"2021-09":4.16,"2021-10":4.16,"2021-11":4.42,"2021-12":4.55,"2022-01":4.16,"2022-02":4.01,"2022-03":4.38,"2022-04":4.25,"2022-05":4.24,"2022-06":4.17,"2022-07":4.18,"2022-08":4.33,"2022-09":4.29,"2022-10":3.97,"2022-11":4.01,"2022-12":3.98,"2023-01":4.03,"2023-02":4.18,"2023-03":4.11,"2023-04":4.04,"2023-05":4.01,"2023-06":3.99,"2023-07":4.23,"2023-08":4.18,"2023-09":4.13,"2023-10":3.97,"2023-11":4.11,"2023-12":4.12,"2024-01":4.08,"2024-02":4.09,"2024-03":4.15,"2024-04":4.11,"2024-05":4.15,"2024-06":4.04,"2024-07":4.17,"2024-08":4.08,"2024-09":3.9,"2024-10":4.08,"2024-11":4.01,"2024-12":4.13,"2025-01":3.91,"2025-02":4.08,"2025-03":4.17,"2025-04":4.15,"2025-05":4.14,"2025-06":4.35,"2025-07":4.33,"2025-08":4.22,"2025-09":4.19,"2025-10":3.98,"2025-11":4.28,"2025-12":4.26,"2026-01":4.2,"2026-02":4.17,"2026-03":4.31,"2026-04":4.14},"walking_steadiness":{"2021-09":0.99,"2021-10":0.95,"2021-11":0.99,"2021-12":1.0,"2022-01":0.98,"2022-02":0.98,"2022-03":0.99,"2022-04":1.0,"2022-05":0.97,"2022-06":1.0,"2022-07":0.99,"2022-08":0.99,"2022-09":1.0,"2022-10":0.97,"2022-11":0.95,"2022-12":0.97,"2023-01":0.98,"2023-02":0.99,"2023-03":0.99,"2023-04":0.99,"2023-05":0.99,"2023-06":0.97,"2023-07":0.99,"2023-08":1.0,"2023-09":0.97,"2023-10":0.96,"2023-11":0.93,"2023-12":0.91,"2024-01":0.91,"2024-02":0.94,"2024-03":0.92,"2024-04":0.94,"2024-05":0.95,"2024-06":0.99,"2024-07":0.99,"2024-08":0.98,"2024-09":0.96,"2024-10":0.96,"2024-11":0.94,"2024-12":0.93,"2025-01":0.94,"2025-02":0.96,"2025-03":0.94,"2025-04":0.98,"2025-05":0.98,"2025-06":1.0,"2025-07":0.99,"2025-08":1.0,"2025-09":0.98,"2025-10":0.96,"2025-11":0.95,"2025-12":0.99,"2026-01":0.98,"2026-02":0.99,"2026-03":0.99},"body_mass":{"2016-10":55.0,"2017-09":56.88,"2017-10":57.46,"2017-11":56.87,"2017-12":57.4,"2018-01":55.35,"2018-03":54.66,"2018-10":57.55,"2020-03":54.0,"2020-08":53.5,"2020-09":54.66,"2020-10":54.37,"2020-11":55.0,"2020-12":55.26,"2021-03":56.25,"2021-04":56.07,"2021-05":55.91,"2021-06":55.33,"2021-07":54.53,"2021-08":53.96,"2021-09":54.2,"2021-10":55.07,"2021-11":53.97,"2021-12":54.06,"2022-01":55.2,"2022-03":55.58,"2022-04":55.55,"2022-05":56.32,"2022-06":56.1,"2022-07":55.8,"2023-07":56.25,"2023-08":56.73,"2023-11":57.4,"2023-12":56.78,"2024-01":56.67,"2024-02":56.16,"2024-03":56.36,"2024-04":57.32,"2024-05":57.69,"2024-07":57.96,"2024-08":57.89,"2024-09":58.14,"2024-10":57.89,"2024-11":57.61,"2025-01":56.89,"2025-02":56.34,"2025-03":56.34,"2025-04":55.73,"2025-05":55.62,"2025-06":55.15,"2025-07":55.78,"2025-08":56.21,"2025-09":56.53,"2025-10":59.38,"2025-11":59.21,"2025-12":58.89,"2026-01":57.52,"2026-02":57.6},"bmi":{"2017-09":19.23,"2017-10":19.42,"2017-11":19.22,"2017-12":19.4,"2018-01":18.71,"2018-03":17.78,"2018-10":19.55,"2020-08":18.08,"2020-09":18.18,"2020-10":18.38,"2020-11":18.59,"2020-12":18.68,"2021-03":19.01,"2021-04":18.95,"2021-05":18.9,"2021-06":18.7,"2021-07":18.43,"2021-08":18.14,"2021-09":18.11,"2021-10":18.4,"2021-11":18.03,"2021-12":18.06,"2022-01":18.44,"2022-03":18.57,"2022-04":18.56,"2022-05":18.82,"2022-06":18.75,"2022-07":18.64,"2023-12":18.78,"2024-01":18.72,"2024-02":18.55,"2024-03":18.62,"2024-04":18.93,"2024-05":19.05,"2024-07":19.14,"2024-08":19.12,"2024-09":19.2,"2024-10":19.12,"2024-11":19.03,"2025-01":18.79,"2025-02":18.61,"2025-03":18.61,"2025-04":18.41,"2025-05":18.38,"2025-06":18.22,"2025-07":18.42,"2025-08":18.57,"2025-09":18.67,"2025-10":19.61,"2025-11":19.56,"2025-12":19.45,"2026-01":19.0,"2026-02":19.02},"flights_climbed":{"2018-09":5.36,"2018-10":8.24,"2018-11":6.12,"2018-12":9.77,"2019-01":6.68,"2019-02":25.06,"2019-03":6.8,"2019-04":5.88,"2019-05":4.71,"2019-06":4.18,"2019-07":3.89,"2019-08":4.65,"2019-09":3.63,"2019-10":5.69,"2019-11":12.37,"2019-12":17.17,"2020-01":7.1,"2020-02":2.35,"2020-03":4.68,"2020-04":1.96,"2020-05":1.8,"2020-06":3.94,"2020-07":2.72,"2020-08":4.3,"2020-09":6.24,"2020-10":9.18,"2020-11":7.76,"2020-12":8.03,"2021-01":2.85,"2021-02":2.13,"2021-03":5.3,"2021-04":6.34,"2021-05":5.15,"2021-06":9.3,"2021-07":6.06,"2021-08":7.22,"2021-09":6.45,"2021-10":8.46,"2021-11":6.54,"2021-12":5.32,"2022-01":4.41,"2022-02":8.54,"2022-03":12.09,"2022-04":6.31,"2022-05":7.13,"2022-06":9.64,"2022-07":10.94,"2022-08":5.5,"2022-09":6.28,"2022-10":6.57,"2022-11":5.66,"2022-12":8.98,"2023-01":6.75,"2023-02":4.16,"2023-03":8.1,"2023-04":4.71,"2023-05":3.7,"2023-06":13.57,"2023-07":3.43,"2023-08":3.46,"2023-09":4.04,"2023-10":3.62,"2023-11":3.46,"2023-12":4.59,"2024-01":6.16,"2024-02":8.0,"2024-03":9.82,"2024-04":4.48,"2024-05":5.72,"2024-06":9.33,"2024-07":6.51,"2024-08":3.43,"2024-09":6.0,"2024-10":6.4,"2024-11":3.9,"2024-12":4.93,"2025-01":7.04,"2025-02":4.52,"2025-03":3.0,"2025-04":6.26,"2025-05":9.39,"2025-06":3.68,"2025-07":2.73,"2025-08":3.08,"2025-09":2.97,"2025-10":10.39,"2025-11":9.59,"2025-12":7.04,"2026-01":6.33,"2026-02":6.82,"2026-03":4.04,"2026-04":4.0},"sleep":{"2023-12":7.92,"2024-01":7.1,"2024-02":8.12,"2024-03":7.6,"2024-04":8.1,"2024-05":7.79,"2024-06":7.06,"2024-07":7.52,"2024-08":7.34,"2024-09":6.97,"2024-10":7.17,"2024-11":7.74,"2024-12":7.27,"2025-01":7.09,"2025-02":6.99,"2025-03":7.06,"2025-04":7.1,"2025-05":7.28,"2025-06":6.98,"2025-07":7.38,"2025-08":7.25,"2025-09":6.72,"2025-10":6.74,"2025-11":7.35,"2025-12":6.73,"2026-01":6.46,"2026-02":6.41,"2026-03":6.77,"2026-04":6.76},"sleep_deep":{"2023-12":0.89,"2024-01":1.08,"2024-02":0.97,"2024-03":0.86,"2024-04":0.8,"2024-05":1.0,"2024-06":0.93,"2024-07":1.17,"2024-08":1.03,"2024-09":1.02,"2024-10":1.16,"2024-11":1.16,"2024-12":1.03,"2025-01":0.99,"2025-02":1.12,"2025-03":1.06,"2025-04":1.11,"2025-05":1.07,"2025-06":0.89,"2025-07":1.04,"2025-08":1.01,"2025-09":1.2,"2025-10":0.99,"2025-11":1.18,"2025-12":0.92,"2026-01":1.04,"2026-02":0.99,"2026-03":0.94,"2026-04":1.11},"sleep_rem":{"2023-12":1.91,"2024-01":1.81,"2024-02":1.96,"2024-03":1.79,"2024-04":1.78,"2024-05":1.85,"2024-06":1.71,"2024-07":1.89,"2024-08":1.77,"2024-09":1.75,"2024-10":1.72,"2024-11":1.83,"2024-12":1.77,"2025-01":1.57,"2025-02":1.46,"2025-03":1.61,"2025-04":1.63,"2025-05":1.84,"2025-06":1.71,"2025-07":1.9,"2025-08":1.82,"2025-09":1.65,"2025-10":1.72,"2025-11":1.85,"2025-12":1.77,"2026-01":1.74,"2026-02":1.72,"2026-03":1.9,"2026-04":1.88},"sleep_core":{"2023-12":5.11,"2024-01":4.22,"2024-02":5.19,"2024-03":4.95,"2024-04":5.52,"2024-05":4.93,"2024-06":4.42,"2024-07":4.46,"2024-08":4.53,"2024-09":4.2,"2024-10":4.29,"2024-11":4.76,"2024-12":4.47,"2025-01":4.53,"2025-02":4.41,"2025-03":4.39,"2025-04":4.36,"2025-05":4.37,"2025-06":4.38,"2025-07":4.44,"2025-08":4.42,"2025-09":3.87,"2025-10":4.04,"2025-11":4.32,"2025-12":4.04,"2026-01":3.68,"2026-02":3.7,"2026-03":3.92,"2026-04":3.77},
+"wrist_temp":{"2024-05":36.19,"2024-06":36.05,"2024-07":36.12,"2024-08":36.05,"2024-09":36.17,"2024-10":36.31,"2024-11":36.25,"2024-12":36.36,"2025-01":36.3,"2025-02":36.44,"2025-03":36.26,"2025-04":36.29,"2025-05":36.25,"2025-06":36.2,"2025-07":36.07,"2025-08":36.1,"2025-09":36.17,"2025-10":36.14,"2025-11":36.2,"2025-12":36.22,"2026-01":36.17,"2026-02":36.21,"2026-03":36.18,"2026-04":36.33},
+"sleep_awake":{"2023-12":0.24,"2024-01":0.32,"2024-02":0.37,"2024-03":0.37,"2024-04":0.24,"2024-05":0.29,"2024-06":0.31,"2024-07":0.26,"2024-08":0.35,"2024-09":0.2,"2024-10":0.18,"2024-11":0.36,"2024-12":0.21,"2025-01":0.52,"2025-02":0.41,"2025-03":0.39,"2025-04":0.26,"2025-05":0.13,"2025-06":0.45,"2025-07":0.19,"2025-08":0.13,"2025-09":0.14,"2025-10":0.23,"2025-11":0.25,"2025-12":0.32,"2026-01":0.34,"2026-02":0.31,"2026-03":0.19,"2026-04":0.13}};
+
+// Workout monthly (fixed data)
+const WORKOUT_MONTHLY = {
+  months:["2024-05","2024-06","2024-07","2024-08","2024-09","2024-10","2024-11","2024-12","2025-01","2025-02","2025-03","2025-04","2025-05","2025-06","2025-07","2025-08","2025-09","2025-10","2025-11","2025-12","2026-01","2026-02","2026-03"],
+  strength:[9,9,19,17,15,14,14,13,10,12,6,12,11,11,14,8,11,7,8,9,17,10,12],
+  tennis:  [0,0,0,0,0,0,0,2,0,2,6,2,12,6,5,4,4,1,3,3,1,5,0],
+  walking: [4,4,2,1,2,5,5,11,1,6,2,9,2,5,2,0,0,6,1,1,3,3,1],
+  other:   [0,2,0,4,1,1,0,5,4,3,1,1,2,8,0,1,0,3,1,4,7,8,4]
+};
+
+// ═══════════════════════════════════════════════════════════
+// TIME RANGE ENGINE
+// ═══════════════════════════════════════════════════════════
+let currentRange = '1y';
+
+const RANGE_DEFS = {
+  '3m':      () => relMonths(3),
+  '6m':      () => relMonths(6),
+  '1y':      () => relMonths(12),
+  '2y':      () => relMonths(24),
+  'all':     () => ['2016-10', '2026-04'],
+  '2024':    () => ['2024-01', '2024-12'],
+  '2025':    () => ['2025-01', '2025-12'],
+  '2023':    () => ['2023-01', '2023-12'],
+  'covid':   () => ['2020-01', '2021-06'],
+  'recovery':() => ['2024-01', '2025-06'],
+};
+
+function relMonths(n) {
+  const end = '2026-04';
+  const [ey, em] = end.split('-').map(Number);
+  let sm = em - n; let sy = ey;
+  while (sm <= 0) { sm += 12; sy--; }
+  return [`${sy}-${String(sm).padStart(2,'0')}`, end];
+}
+
+function filterByRange(obj, start, end) {
+  const keys = Object.keys(obj).filter(k => k >= start && k <= end);
+  const labels = keys.map(shortMonth);
+  const values = keys.map(k => obj[k] ?? null);
+  return { labels, values, keys };
+}
+
+function shortMonth(m) {
+  const [y, mo] = m.split('-');
+  const ms = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  return `${y.slice(2)}/${ms[+mo-1]}`;
+}
+
+function getRangeBounds() {
+  return RANGE_DEFS[currentRange]();
+}
+
+// ═══════════════════════════════════════════════════════════
+// CHART REGISTRY — all charts stored here for update
+// ═══════════════════════════════════════════════════════════
+const CHARTS = {};
+
+function destroyChart(id) {
+  if (CHARTS[id]) { CHARTS[id].destroy(); delete CHARTS[id]; }
+}
+
+// ═══════════════════════════════════════════════════════════
+// CHART DEFAULTS
+// ═══════════════════════════════════════════════════════════
+Chart.defaults.color = '#666688';
+Chart.defaults.font.family = "-apple-system,BlinkMacSystemFont,'SF Pro Display',sans-serif";
+
+const TIP = {
+  backgroundColor:'rgba(18,18,28,.96)',
+  borderColor:'rgba(255,255,255,.1)',
+  borderWidth:1,
+  titleColor:'#e8e8f0',
+  bodyColor:'#aaaacc',
+  padding:11,
+  cornerRadius:8
+};
+
+function baseOpts(yLabel='', yMin=null, yMax=null, extraAnnotations={}) {
+  const yScale = {
+    grid:{color:'rgba(255,255,255,.05)'},
+    ticks:{color:'#666688',font:{size:11}},
+    title: yLabel ? {display:true,text:yLabel,color:'#666688',font:{size:10}} : {display:false}
+  };
+  if (yMin !== null) yScale.min = yMin;
+  if (yMax !== null) yScale.max = yMax;
+  return {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{
+      legend:{display:false},
+      tooltip:TIP,
+      annotation:{annotations: extraAnnotations}
+    },
+    scales:{
+      x:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#666688',font:{size:10},maxRotation:45,autoSkip:true,maxTicksLimit:18}},
+      y: yScale
+    }
+  };
+}
+
+function line(data, color, label, fill=false, tension=0.4, stepped=false) {
+  return {
+    label, data,
+    borderColor:color,
+    backgroundColor: fill ? color.replace('rgb(','rgba(').replace(')',',0.12)') : 'transparent',
+    borderWidth:2.5, pointRadius:2.5, pointHoverRadius:6,
+    pointBackgroundColor:color, tension, fill, stepped
+  };
+}
+
+function bar(data, colors, label) {
+  return { label, data, backgroundColor: Array.isArray(colors)?colors:colors, borderRadius:3, borderSkipped:false };
+}
+
+// ═══════════════════════════════════════════════════════════
+// BUILD / REBUILD ALL CHARTS
+// ═══════════════════════════════════════════════════════════
+function buildAllCharts() {
+  const [start, end] = getRangeBounds();
+  updateRangeDisplay(start, end);
+
+  // helper
+  const fd = (key) => filterByRange(RAW[key] || {}, start, end);
+
+  // ── OVERVIEW ──
+  buildOverview(start, end);
+
+  // ── HEART ──
+  buildLineChart('restingHR', fd('resting_heart_rate'), '#ff3b5c', 'bpm', 55, 95, {
+    ideal:{type:'line',yMin:70,yMax:70,borderColor:'rgba(255,159,10,.5)',borderWidth:1,borderDash:[5,5],
+      label:{content:'理想上限 70',display:true,position:'end',color:'#ff9f0a',font:{size:10}}}
+  });
+  buildLineChart('hrv', fd('hrv'), '#bf5af2', 'ms', 10, 45);
+  buildLineChart('avgHR', fd('heart_rate'), '#ff6b6b', 'bpm', 60, 115);
+  buildLineChart('spo2', {
+    labels: fd('spo2').labels,
+    values: fd('spo2').values.map(v => v ? +(v*100).toFixed(1) : null)
+  }, '#5ac8fa', '%', 93, 100, {
+    norm:{type:'line',yMin:95,yMax:95,borderColor:'rgba(255,159,10,.4)',borderWidth:1,borderDash:[5,5]}
+  });
+  buildLineChart('resp', fd('respiratory_rate'), '#ff9f0a', '次/分', 11, 20);
+  buildLineChart('walkHR', fd('walking_hr'), '#ffd60a', 'bpm', 90, 135);
+  buildLineChart('sixMin', fd('six_min_walk'), '#30d158', 'm', 420, 510, {
+    max:{type:'line',yMin:500,yMax:500,borderColor:'rgba(48,209,88,.4)',borderWidth:1,borderDash:[5,5]}
+  });
+
+  // ── ACTIVITY ──
+  buildLineChart('vo2', fd('vo2max'), '#0a84ff', 'mL/kg/min', 24, 44, {
+    exc:{type:'line',yMin:37,yMax:37,borderColor:'rgba(48,209,88,.5)',borderWidth:1.5,borderDash:[5,5],
+      label:{content:'优秀 ≥37',display:true,position:'end',color:'#30d158',font:{size:10}}},
+    good:{type:'line',yMin:32,yMax:32,borderColor:'rgba(255,159,10,.4)',borderWidth:1,borderDash:[4,4],
+      label:{content:'良好 ≥32',display:true,position:'end',color:'#ff9f0a',font:{size:10}}}
+  });
+  buildBarChart('steps', fd('steps'), (v) => v>=10000?'rgba(48,209,88,.75)':v>=8000?'rgba(255,159,10,.75)':'rgba(255,59,92,.75)', '步', {
+    goal:{type:'line',yMin:10000,yMax:10000,borderColor:'rgba(48,209,88,.5)',borderWidth:1.5,borderDash:[5,5],
+      label:{content:'目标 10,000',display:true,position:'end',color:'#30d158',font:{size:10}}}
+  });
+  buildLineChart('distance', fd('distance'), '#5ac8fa', 'km/天', 0, 14);
+  buildBarChart('exTime', fd('exercise_time'), (v) => v>=30?'rgba(10,132,255,.7)':'rgba(255,59,92,.7)', '分钟/天', {
+    who:{type:'line',yMin:30,yMax:30,borderColor:'rgba(10,132,255,.5)',borderWidth:1.5,borderDash:[5,5],
+      label:{content:'WHO建议 30分钟',display:true,position:'end',color:'#0a84ff',font:{size:10}}}
+  });
+  buildLineChart('energy', fd('active_energy'), '#ff9f0a', 'kcal/天');
+  buildLineChart('walkSpeed', fd('walking_speed'), '#5ac8fa', 'km/h', 3.5, 5.0);
+  buildLineChart('walkSteady', {
+    labels: fd('walking_steadiness').labels,
+    values: fd('walking_steadiness').values.map(v => v ? +(v*100).toFixed(1) : null)
+  }, '#30d158', '%', 85, 102);
+  buildWorkoutCharts(start, end);
+
+  // ── SLEEP ──
+  buildLineChart('sleepTrend', fd('sleep'), '#5ac8fa', '小时', 5, 9.5, {
+    rec:{type:'line',yMin:7,yMax:7,borderColor:'rgba(48,209,88,.5)',borderWidth:1.5,borderDash:[5,5],
+      label:{content:'推荐最低 7h',display:true,position:'end',color:'#30d158',font:{size:10}}}
+  });
+  buildSleepStages(start, end);
+  buildSleepQuality(start, end);
+  buildLineChart('wristTemp', fd('wrist_temp'), '#ff375f', '°C', 35.7, 36.8);
+  buildRemRatio(start, end);
+  buildSleepAwake(start, end);
+  buildSleepDist();
+  buildLineChart('sleepCore', fd('sleep_core'), '#bf5af2', '小时', 3, 6.5, {
+    ref1:{type:'line',yMin:4.87,yMax:4.87,borderColor:'rgba(90,200,250,.4)',borderWidth:1,borderDash:[5,5],
+      label:{content:'2024上半年基准 4.87h',display:true,position:'start',color:'#5ac8fa',font:{size:10}}},
+    ref2:{type:'line',yMin:4.1,yMax:4.1,borderColor:'rgba(255,59,92,.4)',borderWidth:1,borderDash:[5,5],
+      label:{content:'近期均值 4.10h',display:true,position:'end',color:'#ff3b5c',font:{size:10}}}
+  });
+
+  // ── BODY ──
+  buildLineChart('weight', fd('body_mass'), '#ff9f0a', 'kg', 50, 63);
+  buildLineChart('bmi', fd('bmi'), '#5ac8fa', 'kg/m²', 16, 22, {
+    lo:{type:'line',yMin:18.5,yMax:18.5,borderColor:'rgba(255,159,10,.4)',borderWidth:1,borderDash:[4,4]},
+    hi:{type:'line',yMin:24.9,yMax:24.9,borderColor:'rgba(255,159,10,.4)',borderWidth:1,borderDash:[4,4],
+      label:{content:'正常上限 24.9',display:true,position:'end',color:'#ff9f0a',font:{size:10}}}
+  });
+  buildBarChart('flights', fd('flights_climbed'), () => 'rgba(191,90,242,.7)', '层/天');
+}
+
+// ── Generic line chart ──
+function buildLineChart(id, fd, color, yLabel='', yMin=null, yMax=null, annotations={}) {
+  destroyChart(id);
+  const ctx = document.getElementById(id);
+  if (!ctx) return;
+  const opts = baseOpts(yLabel, yMin, yMax, annotations);
+  CHARTS[id] = new Chart(ctx, {
+    type:'line',
+    data:{ labels:fd.labels, datasets:[line(fd.values, color, yLabel, true)] },
+    options: opts
+  });
+}
+
+// ── Generic bar chart ──
+function buildBarChart(id, fd, colorFn, yLabel='', annotations={}) {
+  destroyChart(id);
+  const ctx = document.getElementById(id);
+  if (!ctx) return;
+  const colors = fd.values.map(v => colorFn(v));
+  const opts = baseOpts(yLabel, null, null, annotations);
+  CHARTS[id] = new Chart(ctx, {
+    type:'bar',
+    data:{ labels:fd.labels, datasets:[bar(fd.values, colors, yLabel)] },
+    options: opts
+  });
+}
+
+// ── Overview (3-axis) ──
+function buildOverview(start, end) {
+  ['overviewChart','ov_hrHrv','ov_stepsEx'].forEach(destroyChart);
+
+  const hrD = filterByRange(RAW.resting_heart_rate, start, end);
+  const hrvD = filterByRange(RAW.hrv, start, end);
+  const stepsD = filterByRange(RAW.steps, start, end);
+  const exD = filterByRange(RAW.exercise_time, start, end);
+
+  // Align labels to union of HR + steps
+  const allKeys = [...new Set([...hrD.keys, ...stepsD.keys])].sort();
+  const labels = allKeys.map(shortMonth);
+  const hrVals = allKeys.map(k => RAW.resting_heart_rate[k] ?? null);
+  const hrvVals = allKeys.map(k => RAW.hrv[k] ?? null);
+  const stepsVals = allKeys.map(k => RAW.steps[k] ? RAW.steps[k]/100 : null);
+
+  const ctx1 = document.getElementById('overviewChart');
+  if (ctx1) {
+    CHARTS['overviewChart'] = new Chart(ctx1, {
+      type:'line',
+      data:{ labels, datasets:[
+        {...line(hrVals,'#ff3b5c','静息心率(bpm)',true), yAxisID:'y'},
+        {...line(hrvVals,'#bf5af2','HRV(ms)'), yAxisID:'y2'},
+        {...line(stepsVals,'#30d158','步数(百步)',false,0.4), borderWidth:1.8, pointRadius:1.5, yAxisID:'y2'}
+      ]},
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        plugins:{
+          legend:{display:true,labels:{color:'#aaaacc',font:{size:11},boxWidth:16,padding:14}},
+          tooltip:TIP,
+          annotation:{annotations:{
+            crisis:{type:'box',
+              xMin: allKeys.indexOf('2024-02') >= 0 ? allKeys.indexOf('2024-02') : undefined,
+              xMax: allKeys.indexOf('2024-04') >= 0 ? allKeys.indexOf('2024-04') : undefined,
+              backgroundColor:'rgba(255,59,92,.05)',borderColor:'rgba(255,59,92,.25)',borderWidth:1,
+              label:{content:'健康低谷',display: allKeys.includes('2024-02'),color:'#ff3b5c',font:{size:10}}}
+          }}
+        },
+        scales:{
+          x:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#666688',font:{size:10},maxRotation:45,autoSkip:true,maxTicksLimit:20}},
+          y:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#666688',font:{size:10}},position:'left',min:55,max:100,title:{display:true,text:'心率(bpm)',color:'#ff3b5c',font:{size:10}}},
+          y2:{grid:{drawOnChartArea:false},ticks:{color:'#666688',font:{size:10}},position:'right',title:{display:true,text:'HRV(ms)/步数(百)',color:'#bf5af2',font:{size:10}}}
+        }
+      }
+    });
+  }
+
+  // HR vs HRV dual axis
+  const ctx2 = document.getElementById('ov_hrHrv');
+  if (ctx2) {
+    CHARTS['ov_hrHrv'] = new Chart(ctx2, {
+      type:'line',
+      data:{ labels:hrD.labels, datasets:[
+        {...line(hrD.values,'#ff3b5c','静息心率'), yAxisID:'y'},
+        {...line(hrD.keys.map(k=>RAW.hrv[k]??null),'#bf5af2','HRV'), yAxisID:'y2'}
+      ]},
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:true,labels:{color:'#aaaacc',font:{size:11},boxWidth:14}},tooltip:TIP,annotation:{annotations:{}}},
+        scales:{
+          x:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#666688',font:{size:10},maxRotation:45,autoSkip:true,maxTicksLimit:16}},
+          y:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#666688',font:{size:10}},position:'left',title:{display:true,text:'bpm',color:'#ff3b5c',font:{size:10}}},
+          y2:{grid:{drawOnChartArea:false},ticks:{color:'#666688',font:{size:10}},position:'right',title:{display:true,text:'ms',color:'#bf5af2',font:{size:10}}}
+        }
+      }
+    });
+  }
+
+  // Steps + exercise time
+  const ctx3 = document.getElementById('ov_stepsEx');
+  if (ctx3) {
+    CHARTS['ov_stepsEx'] = new Chart(ctx3, {
+      type:'bar',
+      data:{ labels:stepsD.labels, datasets:[
+        bar(stepsD.values, stepsD.values.map(v=>v>=10000?'rgba(48,209,88,.7)':v>=8000?'rgba(255,159,10,.7)':'rgba(255,59,92,.7)'), '步数'),
+        {...line(stepsD.keys.map(k=>RAW.exercise_time[k]??null),'#ff9f0a','运动时间(分)',false,0.4), type:'line', yAxisID:'y2', borderWidth:2, pointRadius:2}
+      ]},
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:true,labels:{color:'#aaaacc',font:{size:11},boxWidth:14}},tooltip:TIP,annotation:{annotations:{
+          goal:{type:'line',yMin:10000,yMax:10000,borderColor:'rgba(48,209,88,.4)',borderWidth:1.5,borderDash:[5,5]}
+        }}},
+        scales:{
+          x:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#666688',font:{size:10},maxRotation:45,autoSkip:true,maxTicksLimit:16}},
+          y:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#666688',font:{size:10}},position:'left',title:{display:true,text:'步数',color:'#30d158',font:{size:10}}},
+          y2:{grid:{drawOnChartArea:false},ticks:{color:'#666688',font:{size:10}},position:'right',title:{display:true,text:'分钟',color:'#ff9f0a',font:{size:10}}}
+        }
+      }
+    });
+  }
+}
+
+// ── Sleep stages stacked bar ──
+function buildSleepStages(start, end) {
+  destroyChart('sleepStages');
+  const ctx = document.getElementById('sleepStages');
+  if (!ctx) return;
+  const deepD = filterByRange(RAW.sleep_deep, start, end);
+  const remD  = filterByRange(RAW.sleep_rem,  start, end);
+  const coreD = filterByRange(RAW.sleep_core, start, end);
+  CHARTS['sleepStages'] = new Chart(ctx, {
+    type:'bar',
+    data:{ labels:deepD.labels, datasets:[
+      {label:'深睡',data:deepD.values,backgroundColor:'#1e5fa0',borderRadius:2},
+      {label:'REM', data:deepD.keys.map(k=>RAW.sleep_rem[k]??null),backgroundColor:'#4a90d9',borderRadius:2},
+      {label:'核心',data:deepD.keys.map(k=>RAW.sleep_core[k]??null),backgroundColor:'#7bb8f0',borderRadius:2}
+    ]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:TIP,annotation:{annotations:{}}},
+      scales:{
+        x:{stacked:true,grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#666688',font:{size:10},maxRotation:45,autoSkip:true,maxTicksLimit:16}},
+        y:{stacked:true,grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#666688',font:{size:10}},title:{display:true,text:'小时',color:'#666688',font:{size:10}}}
+      }
+    }
+  });
+}
+
+// ── Sleep quality (deep + REM lines) ──
+function buildSleepQuality(start, end) {
+  destroyChart('sleepQuality');
+  const ctx = document.getElementById('sleepQuality');
+  if (!ctx) return;
+  const deepD = filterByRange(RAW.sleep_deep, start, end);
+  CHARTS['sleepQuality'] = new Chart(ctx, {
+    type:'line',
+    data:{ labels:deepD.labels, datasets:[
+      {...line(deepD.values,'#1e6fbf','深睡',true), pointRadius:3},
+      {...line(deepD.keys.map(k=>RAW.sleep_rem[k]??null),'#4a90d9','REM'), pointRadius:3}
+    ]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:true,labels:{color:'#aaaacc',font:{size:11},boxWidth:14}},tooltip:TIP,annotation:{annotations:{}}},
+      scales:{
+        x:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#666688',font:{size:10},maxRotation:45,autoSkip:true,maxTicksLimit:16}},
+        y:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#666688',font:{size:10}},min:0,max:3,title:{display:true,text:'小时',color:'#666688',font:{size:10}}}
+      }
+    }
+  });
+}
+
+// ── Sleep Awake ──
+function buildSleepAwake(start, end) {
+  destroyChart('sleepAwake');
+  const ctx = document.getElementById('sleepAwake');
+  if (!ctx) return;
+  const awD = filterByRange(RAW.sleep_awake, start, end);
+  const colors = awD.values.map(v => {
+    if (v === null) return 'rgba(100,100,120,.4)';
+    if (v >= 0.45) return 'rgba(255,59,92,.8)';
+    if (v >= 0.35) return 'rgba(255,159,10,.75)';
+    return 'rgba(90,200,250,.7)';
+  });
+  CHARTS['sleepAwake'] = new Chart(ctx, {
+    type:'bar',
+    data:{ labels:awD.labels, datasets:[bar(awD.values, colors, '清醒时间(h)')] },
+    options: baseOpts('小时', 0, 0.65, {
+      warn:{type:'line',yMin:0.35,yMax:0.35,borderColor:'rgba(255,159,10,.5)',borderWidth:1.5,borderDash:[5,5],
+        label:{content:'偏高警戒 0.35h',display:true,position:'end',color:'#ff9f0a',font:{size:10}}},
+      crisis:{type:'box',
+        xMin: awD.keys.indexOf('2025-01') >= 0 ? awD.keys.indexOf('2025-01') - 0.4 : undefined,
+        xMax: awD.keys.indexOf('2025-03') >= 0 ? awD.keys.indexOf('2025-03') + 0.4 : undefined,
+        backgroundColor:'rgba(255,59,92,.06)',borderColor:'rgba(255,59,92,.2)',borderWidth:1,
+        label:{content:'清醒高峰期',display: awD.keys.includes('2025-01'),color:'#ff3b5c',font:{size:10}}}
+    })
+  });
+}
+
+// ── Sleep Distribution (donut) ──
+function buildSleepDist() {
+  destroyChart('sleepDist');
+  const ctx = document.getElementById('sleepDist');
+  if (!ctx) return;
+  // 固定统计：606天全量数据
+  CHARTS['sleepDist'] = new Chart(ctx, {
+    type:'doughnut',
+    data:{
+      labels:['< 5小时','5–6小时','6–7小时','7–8小时','8–9小时','> 9小时'],
+      datasets:[{
+        data:[31,63,152,244,90,26],
+        backgroundColor:['rgba(255,59,92,.85)','rgba(255,100,60,.8)','rgba(255,159,10,.75)','rgba(48,209,88,.75)','rgba(10,132,255,.75)','rgba(191,90,242,.75)'],
+        borderWidth:0, hoverOffset:8
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{display:true,position:'right',labels:{color:'#aaaacc',font:{size:11},boxWidth:11,padding:7}},
+        tooltip:{...TIP, callbacks:{label:(c)=>`${c.label}: ${c.raw}天 (${(c.raw/606*100).toFixed(1)}%)`}},
+        annotation:{annotations:{}}
+      },
+      cutout:'58%'
+    }
+  });
+}
+
+// ── REM ratio ──
+function buildRemRatio(start, end) {
+  destroyChart('remRatio');
+  const ctx = document.getElementById('remRatio');
+  if (!ctx) return;
+  const sleepD = filterByRange(RAW.sleep, start, end);
+  const ratioVals = sleepD.keys.map(k => {
+    const total = RAW.sleep[k];
+    const rem = RAW.sleep_rem[k];
+    return (total && rem) ? +((rem/total*100).toFixed(1)) : null;
+  });
+  CHARTS['remRatio'] = new Chart(ctx, {
+    type:'line',
+    data:{ labels:sleepD.labels, datasets:[{...line(ratioVals,'#4a90d9','REM占比',true), pointRadius:3}] },
+    options: baseOpts('%', 15, 35, {
+      lo:{type:'line',yMin:20,yMax:20,borderColor:'rgba(74,144,217,.4)',borderWidth:1,borderDash:[5,5]},
+      hi:{type:'line',yMin:25,yMax:25,borderColor:'rgba(74,144,217,.4)',borderWidth:1,borderDash:[5,5],
+        label:{content:'理想 20-25%',display:true,position:'end',color:'#4a90d9',font:{size:10}}}
+    })
+  });
+}
+
+// ── Workout charts ──
+function buildWorkoutCharts(start, end) {
+  destroyChart('workoutCount');
+  destroyChart('workoutType');
+
+  // Filter workout monthly to range
+  const wm = WORKOUT_MONTHLY;
+  const filteredIdx = wm.months.map((m,i)=>({m,i})).filter(({m})=>m>=start&&m<=end);
+  const wLabels = filteredIdx.map(({m})=>shortMonth(m));
+  const wStr = filteredIdx.map(({i})=>wm.strength[i]);
+  const wTen = filteredIdx.map(({i})=>wm.tennis[i]);
+  const wWal = filteredIdx.map(({i})=>wm.walking[i]);
+  const wOth = filteredIdx.map(({i})=>wm.other[i]);
+
+  const ctx1 = document.getElementById('workoutCount');
+  if (ctx1) {
+    CHARTS['workoutCount'] = new Chart(ctx1, {
+      type:'bar',
+      data:{ labels:wLabels, datasets:[
+        {label:'力量训练',data:wStr,backgroundColor:'rgba(10,132,255,.8)',borderRadius:2},
+        {label:'网球',    data:wTen,backgroundColor:'rgba(255,214,10,.8)',borderRadius:2},
+        {label:'步行',    data:wWal,backgroundColor:'rgba(48,209,88,.8)',borderRadius:2},
+        {label:'其他',    data:wOth,backgroundColor:'rgba(191,90,242,.8)',borderRadius:2}
+      ]},
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:true,labels:{color:'#aaaacc',font:{size:11},boxWidth:12,padding:10}},tooltip:TIP,annotation:{annotations:{}}},
+        scales:{
+          x:{stacked:true,grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#666688',font:{size:10},maxRotation:45,autoSkip:true,maxTicksLimit:16}},
+          y:{stacked:true,grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#666688',font:{size:10}},title:{display:true,text:'次数',color:'#666688',font:{size:10}}}
+        }
+      }
+    });
+  }
+
+  const ctx2 = document.getElementById('workoutType');
+  if (ctx2) {
+    CHARTS['workoutType'] = new Chart(ctx2, {
+      type:'doughnut',
+      data:{
+        labels:['力量训练','步行','网球','游泳','HIIT','骑行','椭圆机','徒步','其他'],
+        datasets:[{data:[301,112,71,58,45,20,12,12,59],backgroundColor:['#0a84ff','#30d158','#ffd60a','#5ac8fa','#ff3b5c','#ff9f0a','#bf5af2','#64d2ff','#636366'],borderWidth:0,hoverOffset:8}]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:true,position:'right',labels:{color:'#aaaacc',font:{size:11},boxWidth:11,padding:7}},tooltip:TIP},
+        cutout:'60%'
+      }
+    });
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// RANGE DISPLAY
+// ═══════════════════════════════════════════════════════════
+function updateRangeDisplay(start, end) {
+  const el = document.getElementById('rangeDisplay');
+  if (el) el.textContent = `显示：${start} ~ ${end}`;
+}
+
+// ═══════════════════════════════════════════════════════════
+// PUBLIC: setRange / showSection
+// ═══════════════════════════════════════════════════════════
+function setRange(range, btn) {
+  currentRange = range;
+  document.querySelectorAll('.tr-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  buildAllCharts();
+}
+
+function showSection(name, event) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('section-' + name).classList.add('active');
+  if (event && event.target) event.target.classList.add('active');
+  // Rebuild charts for newly visible section (canvas size may have changed)
+  setTimeout(buildAllCharts, 50);
+}
+
+// ═══════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════
+window.addEventListener('load', () => {
+  buildAllCharts();
+});
+</script>
+</body>
+</html>
